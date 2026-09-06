@@ -6,13 +6,18 @@ Ishlash tartibi:
 2. Bot xush kelibsiz xabarini, kurs taqdimoti rasmini va to'lov uchun
    karta raqamini yuboradi, chek (skrinshot) tashlashni so'raydi.
 3. Foydalanuvchi to'lov chekining skrinshotini yuboradi.
-4. Bot bu skrinshotni ADMINGA (sizga) "✅ Tasdiqlash" / "❌ Rad etish"
-   tugmalari bilan yuboradi. Foydalanuvchiga "Tekshirilmoqda..." deyiladi.
+   - Agar bu foydalanuvchi ILGARI ALLAQACHON havola olgan bo'lsa, bot
+     "Siz avval to'lov qilgansiz va havola olgansiz" deb javob beradi
+     va chekni adminga umuman yubormaydi.
+4. Aks holda, bot bu skrinshotni ADMINGA (sizga) "✅ Tasdiqlash" /
+   "❌ Rad etish" tugmalari bilan yuboradi.
 5. Admin "✅ Tasdiqlash" tugmasini bossa: bot 30 soniya kutadi, so'ng
    yopiq "darslar" kanali uchun BIR MARTALIK taklif havolasini yaratadi
-   va foydalanuvchiga yuboradi.
+   va foydalanuvchiga yuboradi, so'ng bu foydalanuvchini "allaqachon
+   xizmat ko'rsatilgan" deb belgilab qo'yadi (endi qayta link ololmaydi).
    Admin "❌ Rad etish" tugmasini bossa: foydalanuvchiga to'g'ri chek
-   qayta yuborish so'raladi.
+   qayta yuborish so'raladi (bu holatda foydalanuvchi keyinroq yana
+   chek yuborishi mumkin, chunki hali link berilmagan).
 
 O'rnatish:
     pip install python-telegram-bot --break-system-packages
@@ -23,9 +28,14 @@ TO'LDIRISH SHART BO'LGAN JOYLAR (Railway > Variables bo'limida, kodda emas!):
 
 IMAGE_PATH sifatida shu skriptning yonidagi "kurs_taqdimoti.jpg" faylini
 qoldiring (repoga allaqachon yuklangan).
+
+approved_users.json - bot papkasida avtomatik yaratiladigan fayl, allaqachon
+link olgan foydalanuvchilar ro'yxatini saqlaydi (bot qayta ishga tushsa ham
+yo'qolmasligi uchun).
 """
 
 import asyncio
+import json
 import logging
 import os
 
@@ -49,9 +59,32 @@ WAIT_SECONDS = 30
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGE_PATH = os.path.join(SCRIPT_DIR, "kurs_taqdimoti.jpg")
+APPROVED_USERS_FILE = os.path.join(SCRIPT_DIR, "approved_users.json")
 
 # user_id -> {"chat_id": ..., "username": ...} - tasdiq kutayotgan foydalanuvchilar
 pending_users: dict[int, dict] = {}
+
+
+def load_approved_users() -> set[int]:
+    if os.path.exists(APPROVED_USERS_FILE):
+        try:
+            with open(APPROVED_USERS_FILE, "r") as f:
+                return set(json.load(f))
+        except Exception as e:
+            logging.error("approved_users.json o'qishda xatolik: %s", e)
+    return set()
+
+
+def save_approved_users(users: set[int]) -> None:
+    try:
+        with open(APPROVED_USERS_FILE, "w") as f:
+            json.dump(list(users), f)
+    except Exception as e:
+        logging.error("approved_users.json yozishda xatolik: %s", e)
+
+
+# Bot ishga tushganda avvalgi ro'yxatni yuklaydi
+approved_users: set[int] = load_approved_users()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -81,6 +114,25 @@ async def handle_payment_screenshot(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
     user = update.effective_user
+
+    # Bu foydalanuvchi ILGARI ALLAQACHON havola olgan bo'lsa - qayta bermaymiz
+    if user.id in approved_users:
+        await update.message.reply_text(
+            "Siz avval to'lov qilgansiz va darslar kanaliga havola "
+            "olib bo'lgansiz. Har bir foydalanuvchiga faqat bitta "
+            "havola beriladi."
+        )
+        logging.info("Qayta urinish rad etildi: user_id=%s", user.id)
+        return
+
+    # Chek allaqachon adminga yuborilib, javob kutilayotgan bo'lsa - qayta
+    # yubormaymiz, faqat eslatamiz
+    if user.id in pending_users:
+        await update.message.reply_text(
+            "Sizning oldingi chekingiz hali admin tomonidan ko'rib "
+            "chiqilmoqda. Biroz kuting."
+        )
+        return
 
     pending_users[user.id] = {
         "chat_id": update.effective_chat.id,
@@ -179,6 +231,11 @@ async def handle_admin_decision(
                 "boshqalarga yubormang."
             ),
         )
+
+        # Bu foydalanuvchi endi "xizmat ko'rsatilgan" deb belgilanadi -
+        # qayta chek yuborsa ham yangi link olmaydi
+        approved_users.add(user_id)
+        save_approved_users(approved_users)
 
         logging.info(
             "Havola yaratildi: user_id=%s link=%s", user_id, invite_link.invite_link
