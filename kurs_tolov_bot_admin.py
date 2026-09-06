@@ -17,14 +17,12 @@ Ishlash tartibi:
 O'rnatish:
     pip install python-telegram-bot --break-system-packages
 
-TO'LDIRISH SHART BO'LGAN JOYLAR:
+TO'LDIRISH SHART BO'LGAN JOYLAR (Railway > Variables bo'limida, kodda emas!):
     BOT_TOKEN - @BotFather dan olingan token
-    ADMIN_ID  - sizning shaxsiy Telegram ID raqamingiz (username emas,
-                RAQAM). Buni bilish uchun Telegramda @userinfobot ga
-                /start bosing - u sizga ID raqamingizni yuboradi.
+    ADMIN_ID  - sizning shaxsiy Telegram ID raqamingiz (@userinfobot dan)
 
 IMAGE_PATH sifatida shu skriptning yonidagi "kurs_taqdimoti.jpg" faylini
-qoldiring (alohida yuborilgan) yoki o'z rasmingiz bilan almashtiring.
+qoldiring (repoga allaqachon yuklangan).
 """
 
 import asyncio
@@ -43,8 +41,8 @@ from telegram.ext import (
 
 logging.basicConfig(level=logging.INFO)
 
-BOT_TOKEN = "BOT_TOKEN_BU_YERGA"
-ADMIN_ID = 000000000                  # @userinfobot dan olingan ID raqamingiz
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+ADMIN_ID = int(os.environ["ADMIN_ID"])
 CHANNEL_ID = -1004499270578           # darslar bo'ladigan yopiq kanal ID
 CARD_NUMBER = "5614 6846 0443 8166"   # Uzcard
 WAIT_SECONDS = 30
