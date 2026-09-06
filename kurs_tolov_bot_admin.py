@@ -59,7 +59,14 @@ WAIT_SECONDS = 30
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 IMAGE_PATH = os.path.join(SCRIPT_DIR, "kurs_taqdimoti.jpg")
-APPROVED_USERS_FILE = os.path.join(SCRIPT_DIR, "approved_users.json")
+
+# approved_users.json Railway'dagi doimiy Volume ichida saqlanadi (/data),
+# shunda bot qayta ishga tushsa ham bu ma'lumot yo'qolmaydi. Agar /data
+# hali Volume sifatida ulanmagan bo'lsa (masalan mahalliy kompyuterda
+# sinab ko'rayotgan bo'lsangiz), avtomatik ravishda skript papkasiga
+# yozadi.
+DATA_DIR = "/data" if os.path.isdir("/data") else SCRIPT_DIR
+APPROVED_USERS_FILE = os.path.join(DATA_DIR, "approved_users.json")
 
 # user_id -> {"chat_id": ..., "username": ...} - tasdiq kutayotgan foydalanuvchilar
 pending_users: dict[int, dict] = {}
