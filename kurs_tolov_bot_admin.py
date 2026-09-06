@@ -98,7 +98,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     caption = (
         "Kursga xush kelibsiz! 🎓\n\n"
         "Darslar bo'ladigan kanalga o'tish uchun to'lovni amalga oshiring "
-        "va to'lov chekini skrinshot qilib shu botga yuboring.\n\n"
+        "va to'lov chekini skrinshot qilib shu botga yuboring. Kurs narxi 500 000 so'm.\n\n"
         f"💳 To'lov uchun karta raqami (Uzcard):\n"
         f"`{CARD_NUMBER}`\n\n"
         "To'lovni amalga oshirgach, chek skrinshotini shu yerga rasm "
